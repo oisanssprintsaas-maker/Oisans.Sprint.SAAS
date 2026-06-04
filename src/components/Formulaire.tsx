@@ -18,7 +18,7 @@ const SECTORS = [
   'EdTech & HR Tech'
 ];
 
-export default function Formulaire({ onAddProject, currentUserEmail = 'oisans.expert.ia@gmail.com', onOpenLegalModal }: FormulaireProps) {
+export default function Formulaire({ onAddProject, currentUserEmail = 'oisans.sprint.saas@gmail.com', onOpenLegalModal }: FormulaireProps) {
   const [title, setTitle] = useState('');
   const [sector, setSector] = useState(SECTORS[0]);
   const [problem, setProblem] = useState('');
@@ -373,7 +373,7 @@ export default function Formulaire({ onAddProject, currentUserEmail = 'oisans.ex
                 <input
                   id="input-project-email"
                   type="email"
-                  placeholder="Ex: mike@oisans-expert-ia.fr"
+                  placeholder="Ex: oisans.sprint.saas@gmail.com"
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
                   className="w-full bg-cyber-black text-white placeholder-slate-600 border border-cyber-gray/60 rounded px-3 py-2 text-sm focus:outline-none focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan/20 transition-all font-mono"

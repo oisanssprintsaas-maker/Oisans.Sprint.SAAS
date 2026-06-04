@@ -62,7 +62,7 @@ export default function TableauVotes({
   const handleGoogleLogin = () => {
     setIsLoggingIn(true);
     setTimeout(() => {
-      onLogin('oisans.expert.ia@gmail.com', 'google');
+      onLogin('oisans.sprint.saas@gmail.com', 'google');
       setIsLoggingIn(false);
     }, 1200);
   };

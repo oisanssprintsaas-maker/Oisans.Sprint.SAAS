@@ -44,7 +44,7 @@ const INITIAL_PROJECTS: Project[] = [
     user_phone: '+33 6 45 98 12 73',
     signature_hash: 'SEC6-HASH-9EFA73C2-82BA109D-BC44FF12',
     target_audience: 'CTOs, Directeurs de Cabinet de Conseil, Responsables RH de grands groupes.',
-    user_email: 'oisans.expert.ia@gmail.com',
+    user_email: 'oisans.sprint.saas@gmail.com',
     created_at: '2026-06-01T10:00:00Z',
     terms_accepted: true,
     ai_analyzed: true,

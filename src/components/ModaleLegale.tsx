@@ -101,7 +101,7 @@ export default function ModaleLegale({ isOpen, onClose, initialTab = 'rules' }: 
                   <p>
                     Le concours dénommé « Oisans Sprint SAAS » (ci-après le « Concours ») est organisé par Oisans Expert IA, entreprise individuelle exploitée par Monsieur Simonutti Michael, immatriculée sous le numéro SIRET 839 532 835 00015, dont le siège est situé au 742 rue du Paradis, 38520 Le Bourg-d'Oisans, France (ci-après l’« Organisateur »).
                   </p>
-                  <p>L’Organisateur est joignable à l’adresse électronique suivante : <span className="text-accent-cyan">oisans.expert.ia@gmail.com</span></p>
+                  <p>L’Organisateur est joignable à l’adresse électronique suivante : <span className="text-accent-cyan">oisans.sprint.saas@gmail.com</span></p>
                   <p>Le présent règlement définit les modalités de participation, de sélection, de vote, d’attribution de la récompense ainsi que les droits et obligations des participants.</p>
 
                   <p className="font-bold text-white pt-2">ARTICLE 2 – OBJET DU CONCOURS</p>
@@ -239,7 +239,7 @@ export default function ModaleLegale({ isOpen, onClose, initialTab = 'rules' }: 
 
                   <p className="font-bold text-white pt-2">2. RESPONSABLE DU TRAITEMENT</p>
                   <p>Oisans Expert IA, représenté par Monsieur Simonutti Michael, 742 rue du Paradis, 38520 Le Bourg-d'Oisans, France.</p>
-                  <p>Email direct de contact : <span className="text-accent-emerald">Oisans.Sprint.SAAS@gmail.com</span></p>
+                  <p>Email direct de contact : <span className="text-accent-emerald">oisans.sprint.saas@gmail.com</span></p>
 
                   <p className="font-bold text-white pt-2">3. DONNÉES COLLECTÉES</p>
                   <p>
@@ -277,7 +277,7 @@ export default function ModaleLegale({ isOpen, onClose, initialTab = 'rules' }: 
                   <p>Entreprise individuelle exploitée par : Monsieur Simonutti Michael</p>
                   <p>SIRET : <span className="text-accent-cyan">839 532 835 00015</span></p>
                   <p>Adresse : 742 rue du Paradis, 38520 Le Bourg-d'Oisans, France</p>
-                  <p>Email officiel : <span className="text-accent-cyan">oisans.expert.ia@gmail.com</span></p>
+                  <p>Email officiel : <span className="text-accent-cyan">oisans.sprint.saas@gmail.com</span></p>
                   <p>Directeur de la publication : Monsieur Simonutti Michael</p>
 
                   <p className="font-bold text-white pt-2">2. NOM & ADRESSE DE PUBLICATION</p>
