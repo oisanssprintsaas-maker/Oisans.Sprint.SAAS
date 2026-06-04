@@ -1,0 +1,6 @@
+{
+  "name": "Oisans Sprint SaaS",
+  "description": "Plateforme cyber-minimaliste de brainstorming, d'évaluation IA (Nova Verdict) et d'arène de votes en temps réel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

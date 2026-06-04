@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-cyber-black: #000000;
+  --color-cyber-dark: #0b0f19;
+  --color-cyber-deep: #0e1322;
+  --color-cyber-gray: #1b2030;
+  
+  --color-accent-cyan: #00f0ff;
+  --color-accent-emerald: #00ff87;
+}
+
+/* Custom retro cyberpunk styles */
+.cyber-dots {
+  background-image: radial-gradient(#00f0ff 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+.cyan-glow {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+  transition: box-shadow 0.3s ease;
+}
+
+.cyan-glow:hover {
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.3);
+}
+
+.emerald-glow {
+  box-shadow: 0 0 15px rgba(0, 255, 135, 0.15);
+}
+
+.glassmorphism {
+  background: rgba(11, 15, 25, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+}
+
+.glassmorphism-cyan {
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.cyan-border-gradient {
+  border-image: linear-gradient(to right, rgba(0,240,255,0.4), rgba(0,240,255,0.05)) 1;
+}
+
+/* Base custom resets */
+html, body {
+  background-color: #000000;
+  color: #f3f4f6;
+  font-family: var(--font-sans);
+}
