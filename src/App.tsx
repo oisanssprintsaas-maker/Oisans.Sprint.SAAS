@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import { Project, UserSession } from './types';
+import { supabase } from './supabase';
 import Formulaire from './components/Formulaire';
 import CarteIdee from './components/CarteIdee';
 import ModaleAnalyse from './components/ModaleAnalyse';
@@ -200,6 +201,49 @@ export default function App() {
     }
   });
 
+  // Save changes to localStorage helper (and backup state)
+  const saveProjects = (updated: Project[]) => {
+    setProjects(updated);
+    try {
+      localStorage.setItem('oisans_sprint_projects', JSON.stringify(updated));
+    } catch (e) {
+      console.error("Error saving projects to localStorage:", e);
+    }
+  };
+
+  // Load projects from Supabase on mount
+  useEffect(() => {
+    async function loadData() {
+      if (!supabase) return;
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setProjects(data as Project[]);
+        } else {
+          // Database is empty! Auto-seed INITIAL_PROJECTS
+          console.log("Supabase database is empty. Seeding INITIAL_PROJECTS...");
+          const { error: seedError } = await supabase
+            .from('projects')
+            .insert(INITIAL_PROJECTS);
+          if (seedError) {
+            console.error("Error seeding initial projects to Supabase:", seedError);
+          } else {
+            setProjects(INITIAL_PROJECTS);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load projects from Supabase:", err);
+      }
+    }
+    loadData();
+  }, []);
+
   // Access rights toggle for Admin view
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
@@ -260,21 +304,53 @@ export default function App() {
   };
 
   // Promote/Demote item in battle-oriented Arena
-  const handleToggleFinalist = (projectId: string) => {
+  const handleToggleFinalist = async (projectId: string) => {
+    const project = projects.find(item => item.id === projectId);
+    if (!project) return;
+    const targetStatus = !project.is_finalist;
+
     const updated = projects.map(item => {
       if (item.id === projectId) {
-        return { ...item, is_finalist: !item.is_finalist };
+        return { ...item, is_finalist: targetStatus };
       }
       return item;
     });
     saveProjects(updated);
+
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('projects')
+          .update({ is_finalist: targetStatus })
+          .eq('id', projectId);
+        if (error) {
+          console.error("Error updating finalist status in Supabase:", error);
+        }
+      } catch (err) {
+        console.error("Exception toggling finalist:", err);
+      }
+    }
   };
 
   // Erase project node safely
-  const handleDeleteProject = (projectId: string) => {
+  const handleDeleteProject = async (projectId: string) => {
     if (window.confirm("CONFIRMATION DIRECTION : Voulez-vous supprimer définitivement ce projet ? L'action effacera également les métriques d'intéressement de 20%.")) {
       const updated = projects.filter(item => item.id !== projectId);
       saveProjects(updated);
+
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from('projects')
+            .delete()
+            .eq('id', projectId);
+          if (error) {
+            console.error("Error deleting project in Supabase:", error);
+          }
+        } catch (err) {
+          console.error("Exception deleting project:", err);
+        }
+      }
     }
   };
 
@@ -308,40 +384,46 @@ export default function App() {
     }
   });
 
-  // Save changes to localStorage helper
-  const saveProjects = (updated: Project[]) => {
-    setProjects(updated);
-    try {
-      localStorage.setItem('oisans_sprint_projects', JSON.stringify(updated));
-    } catch (e) {
-      console.error("Error saving projects to localStorage:", e);
+  // Synchronize session voting state with Supabase
+  useEffect(() => {
+    async function checkUserVotes() {
+      if (!supabase || !userSession.isConnected || !userSession.email) return;
+      try {
+        const { data, error } = await supabase
+          .from('votes')
+          .select('project_id')
+          .eq('user_email', userSession.email)
+          .maybeSingle();
+        
+        if (error) throw error;
+        
+        if (data) {
+          setUserSession(prev => {
+            if (prev.votedForId !== data.project_id) {
+              const updated = { ...prev, votedForId: data.project_id };
+              try {
+                localStorage.setItem('oisans_sprint_auth', JSON.stringify(updated));
+              } catch (e) {
+                console.error("Error saving updated session:", e);
+              }
+              return updated;
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.error("Error checking user votes from Supabase:", err);
+      }
     }
-  };
+    checkUserVotes();
+  }, [userSession.isConnected, userSession.email]);
 
-  // Submission handler
-  const handleAddProject = (newProjectData: Omit<Project, 'id' | 'created_at' | 'ai_analyzed' | 'votes_count' | 'is_finalist' | 'score_feasibility' | 'score_cost' | 'score_roi' | 'ai_verdict'>) => {
-    const id = `project-${Math.random().toString(36).substring(2, 11)}`;
-    const newProject: Project = {
-      ...newProjectData,
-      id,
-      created_at: new Date().toISOString(),
-      ai_analyzed: false,
-      votes_count: 0,
-      is_finalist: false,
-      score_feasibility: 0,
-      score_cost: 0,
-      score_roi: 0,
-      ai_verdict: null
-    };
-
-    const updated = [newProject, ...projects];
-    saveProjects(updated);
-
-    // After 2.5 seconds, auto-transition to simulated analyzing inside our matrix
+  // Helper to trigger simulated AI evaluation
+  const triggerAIAnalysis = (project: Project) => {
     const timeout1 = setTimeout(() => {
       setProjects(prev => {
         const next = prev.map(item => {
-          if (item.id === id) {
+          if (item.id === project.id) {
             return { 
               ...item, 
               ai_analyzed: false,
@@ -355,21 +437,23 @@ export default function App() {
         } catch (e) {
           console.error("Error saving projects to localStorage:", e);
         }
+        if (supabase) {
+          supabase.from('projects').update({ ai_verdict: "Analyse en cours..." }).eq('id', project.id).then();
+        }
         return next;
       });
 
-      // After 5 seconds, perform full simulated diagnostic with customized content matching the user text
       const timeout2 = setTimeout(() => {
         setProjects(prev => {
-          const next = prev.map(item => {
-            if (item.id === id) {
-              const feasibility = Math.floor(Math.random() * 35 + 55); // 55 - 90
-              const cost = Math.floor(Math.random() * 40 + 50); // 55 - 90 %
-              const roi = Math.floor(Math.random() * 32 + 65); // 65 - 97 %
-              
-              const calculatedVerdict = `Diagnostic de viabilité autonome établi par Nova pour ${item.title} dans le secteur ${item.sector}.
-Le problème de friction ("${item.problem.slice(0,60)}...") présente un point douloureux critique ayant un bon potentiel de monétisation B2B. L'architecture logicielle proposée ("${item.solution.slice(0,60)}...") est considérée comme viable avec une faisabilité estimée à ${feasibility}%. La configuration est certifiée compatible avec l'intégration Supabase d'Oisans Expert IA.`;
+          const feasibility = Math.floor(Math.random() * 35 + 55); // 55 - 90
+          const cost = Math.floor(Math.random() * 40 + 50); // 55 - 90 %
+          const roi = Math.floor(Math.random() * 32 + 65); // 65 - 97 %
+          
+          const calculatedVerdict = `Diagnostic de viabilité autonome établi par Nova pour ${project.title} dans le secteur ${project.sector}.
+Le problème de friction ("${project.problem.slice(0,60)}...") présente un point douloureux critique ayant un bon potentiel de monétisation B2B. L'architecture logicielle proposée ("${project.solution.slice(0,60)}...") est considérée comme viable avec une faisabilité estimée à ${feasibility}%. La configuration est certifiée compatible avec l'intégration Supabase d'Oisans Expert IA.`;
 
+          const next = prev.map(item => {
+            if (item.id === project.id) {
               return {
                 ...item,
                 ai_analyzed: true,
@@ -386,6 +470,15 @@ Le problème de friction ("${item.problem.slice(0,60)}...") présente un point d
           } catch (e) {
             console.error("Error saving projects to localStorage:", e);
           }
+          if (supabase) {
+            supabase.from('projects').update({
+              ai_analyzed: true,
+              score_feasibility: feasibility,
+              score_cost: cost,
+              score_roi: roi,
+              ai_verdict: calculatedVerdict
+            }).eq('id', project.id).then();
+          }
           return next;
         });
       }, 3500);
@@ -395,11 +488,47 @@ Le problème de friction ("${item.problem.slice(0,60)}...") présente un point d
     activeTimeouts.current.push(timeout1);
   };
 
-  // Cast vote callback inside Phase Final Arena
-  const handleCastVote = (projectId: string) => {
-    if (!userSession.isConnected || userSession.votedForId) return;
+  // Submission handler
+  const handleAddProject = (newProjectData: Omit<Project, 'id' | 'created_at' | 'ai_analyzed' | 'votes_count' | 'is_finalist' | 'score_feasibility' | 'score_cost' | 'score_roi' | 'ai_verdict'>) => {
+    const tempId = `project-${Math.random().toString(36).substring(2, 11)}`;
+    const newProject: Omit<Project, 'id'> & { id?: string } = {
+      ...newProjectData,
+      created_at: new Date().toISOString(),
+      ai_analyzed: false,
+      votes_count: 0,
+      is_finalist: false,
+      score_feasibility: 0,
+      score_cost: 0,
+      score_roi: 0,
+      ai_verdict: null
+    };
 
-    // Save vote to state & user record
+    if (supabase) {
+      supabase.from('projects').insert([newProject]).select().single().then(({ data, error }) => {
+        if (error) {
+          console.error("Error inserting project to Supabase:", error);
+          alert("Erreur lors de l'enregistrement de votre projet sur Supabase : " + error.message);
+          return;
+        }
+        if (data) {
+          const createdProject = data as Project;
+          setProjects(prev => [createdProject, ...prev]);
+          triggerAIAnalysis(createdProject);
+        }
+      });
+    } else {
+      const createdProject = { ...newProject, id: tempId } as Project;
+      const updated = [createdProject, ...projects];
+      saveProjects(updated);
+      triggerAIAnalysis(createdProject);
+    }
+  };
+
+  // Cast vote callback inside Phase Final Arena
+  const handleCastVote = async (projectId: string) => {
+    if (!userSession.isConnected || userSession.votedForId || !userSession.email) return;
+
+    // Optimistic update
     const updatedUser = { ...userSession, votedForId: projectId };
     setUserSession(updatedUser);
     try {
@@ -408,13 +537,48 @@ Le problème de friction ("${item.problem.slice(0,60)}...") présente un point d
       console.error("Error saving user session to localStorage:", e);
     }
 
-    const updatedProjects = projects.map(item => {
-      if (item.id === projectId) {
-        return { ...item, votes_count: item.votes_count + 1 };
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('votes')
+          .insert([{ project_id: projectId, user_email: userSession.email }]);
+        
+        if (error) {
+          if (error.code === '23505') {
+            alert("Vous avez déjà voté pour un projet dans l'Arène.");
+          } else {
+            console.error("Error inserting vote in Supabase:", error);
+            alert("Erreur lors de l'enregistrement de votre vote : " + error.message);
+          }
+          // Rollback session
+          const rolledBackUser = { ...userSession, votedForId: undefined };
+          setUserSession(rolledBackUser);
+          localStorage.setItem('oisans_sprint_auth', JSON.stringify(rolledBackUser));
+          return;
+        }
+        
+        // Refresh project list from database to ensure votes_count is perfectly synchronized
+        const { data: updatedProjects, error: fetchError } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (!fetchError && updatedProjects) {
+          setProjects(updatedProjects as Project[]);
+        }
+      } catch (err) {
+        console.error("Exception during voting transaction:", err);
       }
-      return item;
-    });
-    saveProjects(updatedProjects);
+    } else {
+      // Local fallback
+      const updatedProjects = projects.map(item => {
+        if (item.id === projectId) {
+          return { ...item, votes_count: item.votes_count + 1 };
+        }
+        return item;
+      });
+      saveProjects(updatedProjects);
+    }
   };
 
   // Auth simulators
@@ -474,25 +638,40 @@ Le problème de friction ("${item.problem.slice(0,60)}...") présente un point d
       } catch (e) {
         console.error("Error saving projects to localStorage:", e);
       }
+      if (supabase) {
+        supabase.from('projects').update({ ai_verdict: "Analyse en cours..." }).eq('id', projectId).then();
+      }
       return next;
     });
 
     const timeout3 = setTimeout(() => {
       setProjects(prev => {
+        const feasibility = Math.floor(Math.random() * 30 + 60);
+        const cost = Math.floor(Math.random() * 30 + 60);
+        const roi = Math.floor(Math.random() * 25 + 70); // 70-95%
+        
         const next = prev.map(item => {
           if (item.id === projectId) {
-            const feasibility = Math.floor(Math.random() * 30 + 60);
-            const cost = Math.floor(Math.random() * 30 + 60);
-            const roi = Math.floor(Math.random() * 25 + 70); // 70-95%
-            
+            const calculatedVerdict = `Analyse manuelle Nova déclenchée avec succès. La solution "${item.title}" a été testée sous contrainte de charge simulée.
+L'attractivité du marché public cible (${item.target_audience}) offre un excellent levier de rentabilité. Nous accordons l'agrément Oisans SaaS Sprint.`;
+
+            if (supabase) {
+              supabase.from('projects').update({
+                ai_analyzed: true,
+                score_feasibility: feasibility,
+                score_cost: cost,
+                score_roi: roi,
+                ai_verdict: calculatedVerdict
+              }).eq('id', projectId).then();
+            }
+
             return {
               ...item,
               ai_analyzed: true,
               score_feasibility: feasibility,
               score_cost: cost,
               score_roi: roi,
-              ai_verdict: `Analyse manuelle Nova déclenchée avec succès. La solution "${item.title}" a été testée sous contrainte de charge simulée.
-L'attractivité du marché public cible (${item.target_audience}) offre un excellent levier de rentabilité. Nous accordons l'agrément Oisans SaaS Sprint.`
+              ai_verdict: calculatedVerdict
             };
           }
           return item;
@@ -507,6 +686,7 @@ L'attractivité du marché public cible (${item.target_audience}) offre un excel
     }, 4000);
     activeTimeouts.current.push(timeout3);
   };
+
 
   const handleCardClick = (project: Project) => {
     if (project.ai_analyzed) {
