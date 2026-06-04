@@ -246,6 +246,9 @@ export default function App() {
 
   // Access rights toggle for Admin view
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminPasswordError, setAdminPasswordError] = useState(false);
 
   // Download entire submissions file as a spreadsheet CSV with proper cell sanitization
   const downloadProjectsCSV = () => {
@@ -816,67 +819,154 @@ L'attractivité du marché public cible (${item.target_audience}) offre un excel
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden mt-4 pt-4 border-t border-cyber-gray/45"
               >
-                <div className="bg-cyber-black/90 rounded border border-accent-cyan/30 p-4 space-y-4 shadow-[0_0_20px_rgba(0,240,255,0.06)]">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                    <div>
-                      <h4 className="text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2">
-                        <span className="text-accent-cyan">●</span>
-                        <span>Console d'Administration Directrice • Mike Simonutti</span>
+                {!isAdminUnlocked ? (
+                  <div className="bg-cyber-black/95 rounded border border-accent-cyan/20 p-5 space-y-4 shadow-[0_0_20px_rgba(0,240,255,0.04)] max-w-sm mx-auto">
+                    <div className="text-center space-y-2">
+                      <h4 className="text-accent-cyan text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center space-x-2">
+                        <span>🔒 Accès Sécurisé Direction</span>
                       </h4>
                       <p className="text-[10px] text-slate-450 font-mono">
-                        Supervision en temps réel des propositions d'idées, conformité d'intéressement brut (20%) et arbitrage de l'Arène.
+                        Veuillez saisir la clé de sécurité pour déverrouiller l'espace gestion de l'arène.
                       </p>
                     </div>
 
-                    <button
-                      id="btn-admin-export-csv"
-                      onClick={downloadProjectsCSV}
-                      className="bg-accent-emerald text-black hover:bg-white hover:shadow-[0_0_15px_rgba(0,255,135,0.4)] text-[11px] font-mono font-bold px-4 py-2 rounded transition-all cursor-pointer flex items-center space-x-1.5 uppercase"
-                    >
-                      <span>📥</span>
-                      <span>Exporter Portfolio (.CSV)</span>
-                    </button>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      if (adminPasswordInput === 'OISANS-SPRINT-2026') {
+                        setIsAdminUnlocked(true);
+                        setAdminPasswordError(false);
+                        setAdminPasswordInput('');
+                      } else {
+                        setAdminPasswordError(true);
+                        setAdminPasswordInput('');
+                      }
+                    }} className="space-y-3">
+                      <div>
+                        <input
+                          type="password"
+                          required
+                          placeholder="Clé de sécurité..."
+                          value={adminPasswordInput}
+                          onChange={(e) => {
+                            setAdminPasswordInput(e.target.value);
+                            setAdminPasswordError(false);
+                          }}
+                          className={`w-full bg-cyber-black text-center text-white border rounded p-2 text-xs focus:outline-none font-mono ${
+                            adminPasswordError ? 'border-red-500 focus:border-red-500' : 'border-cyber-gray focus:border-accent-cyan'
+                          }`}
+                        />
+                        {adminPasswordError && (
+                          <span className="text-[9px] font-mono text-red-450 block mt-1.5 text-center">
+                            Clé de sécurité incorrecte. Accès refusé.
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsAdminPanelOpen(false)}
+                          className="w-1/2 bg-cyber-gray hover:bg-cyber-gray/70 text-slate-350 py-2 rounded text-xs font-mono font-bold uppercase cursor-pointer"
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          type="submit"
+                          className="w-1/2 bg-accent-cyan text-black hover:bg-white py-2 rounded text-xs font-mono font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                        >
+                          Entrer
+                        </button>
+                      </div>
+                    </form>
                   </div>
+                ) : (
+                  <div className="bg-cyber-black/90 rounded border border-accent-cyan/30 p-4 space-y-4 shadow-[0_0_20px_rgba(0,240,255,0.06)]">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                      <div>
+                        <h4 className="text-white text-xs font-mono font-bold uppercase tracking-wider flex items-center space-x-2">
+                          <span className="text-accent-cyan">●</span>
+                          <span>Console d'Administration Directrice • Mike Simonutti</span>
+                        </h4>
+                        <p className="text-[10px] text-slate-450 font-mono">
+                          Supervision en temps réel des propositions d'idées, conformité d'intéressement brut (20%) et arbitrage de l'Arène.
+                        </p>
+                      </div>
 
-                  {/* List of actions per project (easy state management triggers) */}
-                  <div className="border-t border-cyber-gray/20 pt-3 space-y-2">
-                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-2">Arbitrage rapide des propositions ({projects.length}) :</span>
-                    <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar pr-1">
-                      {projects.map(p => (
-                        <div key={p.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-cyber-deep/50 p-2.5 rounded border border-cyber-gray/40 gap-2 hover:border-cyber-gray/70 transition-colors">
-                          <div className="truncate max-w-[320px]">
-                            <span className="text-[10px] font-mono text-slate-400 block truncate font-semibold">{p.title}</span>
-                            <span className="text-[9px] font-mono text-slate-500 block">
-                              Par : {p.user_fullname || 'Anonyme'} {p.signature_hash ? '✍️' : '❌'} • {p.sector}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            {/* Toggle Finalist arena */}
-                            <button
-                              onClick={() => handleToggleFinalist(p.id)}
-                              className={`text-[9px] font-mono font-bold px-2 py-1 rounded transition-all cursor-pointer ${
-                                p.is_finalist 
-                                  ? 'bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/40' 
-                                  : 'bg-cyber-black text-slate-400 border border-cyber-gray hover:border-accent-cyan'
-                              }`}
-                            >
-                              {p.is_finalist ? "★ Finaliste (Arène)" : "☆ Qualifier" }
-                            </button>
+                      <div className="flex items-center space-x-2 w-full md:w-auto justify-between md:justify-end">
+                        <button
+                          onClick={() => setIsAdminUnlocked(false)}
+                          className="bg-cyber-gray text-slate-300 hover:text-white border border-cyber-gray/70 text-[9px] font-mono font-bold px-2.5 py-1.5 rounded transition-all cursor-pointer uppercase"
+                          title="Verrouiller la console"
+                        >
+                          🔒 Verrouiller
+                        </button>
+                        <button
+                          id="btn-admin-export-csv"
+                          onClick={downloadProjectsCSV}
+                          className="bg-accent-emerald text-black hover:bg-white hover:shadow-[0_0_15px_rgba(0,255,135,0.4)] text-[11px] font-mono font-bold px-4 py-2 rounded transition-all cursor-pointer flex items-center space-x-1.5 uppercase"
+                        >
+                          <span>📥</span>
+                          <span>Exporter Portfolio (.CSV)</span>
+                        </button>
+                      </div>
+                    </div>
 
-                            {/* Safe delete icon */}
-                            <button
-                              onClick={() => handleDeleteProject(p.id)}
-                              className="bg-red-950/40 text-red-400 hover:bg-red-900/60 hover:text-white border border-red-900/30 hover:border-red-500 text-[9.5px] font-mono font-bold px-2 py-1 rounded transition-all cursor-pointer"
-                            >
-                              Supprimer
-                            </button>
+                    {/* List of actions per project (easy state management triggers) */}
+                    <div className="border-t border-cyber-gray/20 pt-3 space-y-2">
+                      <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-2">Arbitrage rapide des propositions ({projects.length}) :</span>
+                      <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar pr-1">
+                        {projects.map(p => (
+                          <div key={p.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-cyber-deep/50 p-2.5 rounded border border-cyber-gray/40 gap-2 hover:border-cyber-gray/70 transition-colors">
+                            <div className="truncate max-w-[320px]">
+                              <span className="text-[10px] font-mono text-slate-400 block truncate font-semibold">{p.title}</span>
+                              <span className="text-[9px] font-mono text-slate-500 block">
+                                Par : {p.user_fullname || 'Anonyme'} {p.signature_hash ? '✍️' : '❌'} • {p.sector}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              {/* Discuss with AI button */}
+                              <button
+                                onClick={() => {
+                                  const textToCopy = `Salut l'IA ! Discutons du projet "${p.title}" (${p.sector}) pour voir s'il mérite d'être finaliste. 
+Voici son pitch :
+- Problème : ${p.problem}
+- Solution : ${p.solution}
+- Verdict IA actuel : ${p.ai_verdict || 'Pas encore d\'analyse'}`;
+                                  navigator.clipboard.writeText(textToCopy);
+                                  alert("Pitch copié ! Collez-le dans notre chat de discussion pour que nous puissions en débattre ensemble.");
+                                }}
+                                className="bg-cyber-black text-accent-cyan hover:bg-accent-cyan/10 border border-cyber-gray hover:border-accent-cyan text-[9px] font-mono font-bold px-2 py-1 rounded transition-all cursor-pointer"
+                                title="Copier le pitch pour en débattre avec l'IA"
+                              >
+                                💬 Débattre
+                              </button>
+
+                              {/* Toggle Finalist arena */}
+                              <button
+                                onClick={() => handleToggleFinalist(p.id)}
+                                className={`text-[9px] font-mono font-bold px-2 py-1 rounded transition-all cursor-pointer ${
+                                  p.is_finalist 
+                                    ? 'bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/40' 
+                                    : 'bg-cyber-black text-slate-400 border border-cyber-gray hover:border-accent-cyan'
+                                }`}
+                              >
+                                {p.is_finalist ? "★ Finaliste" : "☆ Qualifier" }
+                              </button>
+
+                              {/* Safe delete icon */}
+                              <button
+                                onClick={() => handleDeleteProject(p.id)}
+                                className="bg-red-950/40 text-red-400 hover:bg-red-900/60 hover:text-white border border-red-900/30 hover:border-red-500 text-[9.5px] font-mono font-bold px-2 py-1 rounded transition-all cursor-pointer"
+                              >
+                                Supprimer
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
